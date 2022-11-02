@@ -6,15 +6,16 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 fn handle_client(mut stream: TcpStream, tx:Sender<[u8;50]>, rx: Receiver<[u8;50]>) {
     let (sub_tx, sub_rx) = mpsc::channel();
+    let stream_clone = stream.try_clone().expect("stream clone fail");
     thread::spawn(move|| {
         // connection succeeded
-        handle_subclient(stream, sub_tx.clone())
+        handle_subclient(stream_clone, sub_tx)
     });
 
     loop {
         match sub_rx.try_recv() {
             Ok(msg) => {
-                sub_tx.send(msg);
+                tx.send(msg).expect("sub_tx failed");
             },
             Err(why) => {
                 if why == TryRecvError::Empty {
@@ -26,7 +27,6 @@ fn handle_client(mut stream: TcpStream, tx:Sender<[u8;50]>, rx: Receiver<[u8;50]
         };
         match rx.recv() {
             Ok(data) => {
-                // echo everything!
                 stream.write(&data[0..50]).unwrap();
             },
             Err(_) => {
@@ -44,7 +44,6 @@ fn handle_subclient(mut stream: TcpStream, tx: Sender<[u8;50]>) {
     let mut data = [0 as u8; 50]; // using 50 byte buffer
     while match stream.read(&mut data) {
         Ok(size) => {
-            // echo everything!
             if size==0 { 
                 println!("Connection with {}, closed", stream.peer_addr().unwrap());
                 false 
@@ -66,8 +65,8 @@ fn main() {
     // accept connections and process them, spawning a new thread for each one
     println!("Server listening on port 3333");
     let (client_tx, server_rx) = mpsc::channel();
+    let (sender_tx, sender_rx) = mpsc::channel();
     let mut txs: Vec<Sender<[u8;50]>> = Vec::new();
-    let txsr = &txs;
 
     thread::spawn( move || {
         for stream in listener.incoming() {
@@ -75,8 +74,8 @@ fn main() {
                 Ok(stream) => {
                     println!("New connection: {}", stream.peer_addr().unwrap());
                     let (server_tx, client_rx) = mpsc::channel();
-                    txsr.push(server_tx);
                     let txcli = client_tx.clone();
+                    sender_tx.clone().send(server_tx).expect("sendersender fail");
                     thread::spawn(move|| {
                         // connection succeeded
                         handle_client(stream, txcli, client_rx)
@@ -92,9 +91,25 @@ fn main() {
         drop(listener);
     });
 
-    for tx in txs {
-        tx.send([0;50]);
+    loop {
+        match sender_rx.try_recv() {
+            Ok(sender) => {
+                txs.push(sender);
+            },
+            Err(why) => {
+                if why == TryRecvError::Empty {
+                    break;
+                } else {
+                    panic!("reader_tx terminated")
+                }
+            }
+        };
     }
 
+    let data = server_rx.recv().expect("server_rx failed");
+
+    for tx in txs {
+        tx.send(data).expect("Broadcast failed");
+    }
 
 }
