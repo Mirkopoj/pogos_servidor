@@ -3,5 +3,12 @@
 version = 3
 
 [[package]]
+name = "modulos_comunes"
+version = "0.1.0"
+
+[[package]]
 name = "servidor"
 version = "0.1.0"
+dependencies = [
+ "modulos_comunes",
+]

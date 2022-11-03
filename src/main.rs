@@ -1,52 +1,47 @@
 use std::thread;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write, ErrorKind};
-use std::str::from_utf8;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
-fn handle_client(mut stream: TcpStream, tx:Sender<[u8;50]>, rx: Receiver<[u8;50]>) {
-    stream.set_read_timeout(Some(Duration::new(1, 0))).expect("Stream set duration failed");
+extern crate modulos_comunes;
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE};
+
+fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
     let stream_clone = stream.try_clone().expect("stream clone fail");
     thread::spawn(move|| {
-        // connection succeeded
         handle_subclient(stream_clone, sub_tx)
     });
 
     let mut hay_cliente = true;
     while hay_cliente {
-        loop {
-            match sub_rx.recv_timeout(Duration::new(1,0)) {
-                Ok(msg) => {
-                    //println!("llegó {} 1", from_utf8(&msg).unwrap());
-                    tx.send(msg).expect("sub_tx failed");
-                },
-                Err(why) => {
-                    if why == RecvTimeoutError::Timeout{
-                        break;
-                    } else {
-                        println!("reader_tx terminated");
-                        hay_cliente = false;
-                        break;
-                    }
-                }
-            };
-        }
+        //mensajes entrantes del cliente
+        match sub_rx.recv_timeout(Duration::new(1,0)) {
+            Ok(msg) => {
+                tx.send(msg).expect("sub_tx failed");
+            },
+            Err(why) => {
+                if why == RecvTimeoutError::Disconnected{
+                    println!("reader_tx terminated");
+                    hay_cliente = false;
+                } 
+            }
+        };
+
+        //mensajes salientes del server
         match rx.try_recv() {
             Ok(data) => {
-                match stream.write(&data[0..50]) {
-                    Ok(_) => { 
-                        println!("salió {} 2", from_utf8(&data).unwrap());
-                    },
+                match stream.write(&data) {
+                    Ok(_) => { },
                     Err(why) => { println!("stream write failed {}", why); },
                 };
             },
             Err(why) => {
                 if why != TryRecvError::Empty {
                     println!("An error occurred, rx client");
-                    break;
+                    hay_cliente = false;
                 }
             }
         } 
@@ -55,9 +50,9 @@ fn handle_client(mut stream: TcpStream, tx:Sender<[u8;50]>, rx: Receiver<[u8;50]
     drop(stream);
 }
 
-fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<[u8;50]>) {
+fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
     let addr = stream.peer_addr().expect("Stream peer_addr failed on subclient");
-    let mut data = [0 as u8; 50]; // using 50 byte buffer
+    let mut data: TcpMessage = Default::default(); // using 50 byte buffer
     while match stream.read(&mut data) {
         Ok(size) => {
             if size==0 { 
@@ -70,7 +65,6 @@ fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<[u8;50]>) {
         },
         Err(why) => {
             if why.kind().eq(&ErrorKind::WouldBlock) { 
-                //println!("Timeout read from connection {}", stream.peer_addr().expect("Stream peer_addr failed on error"));
                 true 
             }
             else {
@@ -87,7 +81,7 @@ fn main() {
     println!("Server listening on port 3333");
     let (client_tx, server_rx) = mpsc::channel();
     let (sender_tx, sender_rx) = mpsc::channel();
-    let mut txs: Vec<Sender<[u8;50]>> = Vec::new();
+    let mut txs: Vec<Sender<TcpMessage>> = Vec::new();
 
     thread::spawn( move || {
         for stream in listener.incoming() {
@@ -130,14 +124,13 @@ fn main() {
         }
 
         //Lectura de los clientes
-        let data = match server_rx.try_recv() {
+        let data: TcpMessage = match server_rx.try_recv() {
             Ok(msg) => {
-                //println!("llegó {} 2", from_utf8(&msg).unwrap());
                 msg
             },
             Err(why) => {
                 if why == TryRecvError::Empty{
-                    [0;50]
+                    Default::default()
                 }
                 else {
                     panic!("server_rx failed");
@@ -146,15 +139,13 @@ fn main() {
         };
 
         //Escritura a los clientes
-        if data != [0;50]{
+        if data != EMPTYTCPMESSAGE {
             let mut index = 0;
             let txsc = txs.clone();
             for tx in txsc {
-                //println!("salió {} 1", from_utf8(&data).unwrap());
                 match tx.send(data){
                     Ok(_) => { },
-                    Err(why) => {
-                        println!("Broadcast failed {}", why);
+                    Err(_) => {
                         txs.remove(index);
                     },
                 };
