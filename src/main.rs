@@ -52,7 +52,7 @@ fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpM
 
 fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
     let addr = stream.peer_addr().expect("Stream peer_addr failed on subclient");
-    let mut data: TcpMessage = Default::default(); // using 50 byte buffer
+    let mut data: TcpMessage = EMPTYTCPMESSAGE; // using 50 byte buffer
     while match stream.read(&mut data) {
         Ok(size) => {
             if size==0 { 
@@ -75,14 +75,7 @@ fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
     } {}
 }
 
-fn main() {
-    let listener = TcpListener::bind("0.0.0.0:3333").expect("listener failed on bind");
-    // accept connections and process them, spawning a new thread for each one
-    println!("Server listening on port 3333");
-    let (client_tx, server_rx) = mpsc::channel();
-    let (sender_tx, sender_rx) = mpsc::channel();
-    let mut txs: Vec<Sender<TcpMessage>> = Vec::new();
-
+fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sender_tx: Sender<Sender<TcpMessage>>) {
     thread::spawn( move || {
         for stream in listener.incoming() {
             match stream {
@@ -105,6 +98,16 @@ fn main() {
         // close the socket server
         drop(listener);
     });
+}
+
+fn main() {
+    let listener = TcpListener::bind("0.0.0.0:3333").expect("listener failed on bind");
+    println!("Server listening on port 3333");
+    let (client_tx, server_rx) = mpsc::channel();
+    let (sender_tx, sender_rx) = mpsc::channel();
+    let mut txs: Vec<Sender<TcpMessage>> = Vec::new();
+
+    listener_launch(listener, client_tx, sender_tx);
 
     loop {
         loop {
@@ -130,7 +133,7 @@ fn main() {
             },
             Err(why) => {
                 if why == TryRecvError::Empty{
-                    Default::default()
+                    EMPTYTCPMESSAGE
                 }
                 else {
                     panic!("server_rx failed");
