@@ -5,6 +5,8 @@ use std::sync::mpsc::Sender;
 extern crate modulos_comunes;
 use modulos_comunes::TcpMessage;
 
+mod sistema;
+
 mod server;
 use crate::server::*;
 
@@ -21,6 +23,8 @@ fn main() {
         recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
         let data = leer_clientes(&server_rx);
+
+        let estado = ver_estado_del_sistema(data);
 
         escribir_clientes(data, &mut txs);
     }
