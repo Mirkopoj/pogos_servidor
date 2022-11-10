@@ -6,9 +6,9 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, DataStruct, Convert, from_bytes};
+use modulos_comunes::{TcpMessage, DataStruct, Convert, from_bytes};
 
-fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
+fn handle_client(mut stream: TcpStream, tx:Sender<DataStruct>, rx: Receiver<DataStruct>) {
     let (sub_tx, sub_rx) = mpsc::channel();
     let stream_clone = stream.try_clone().expect("stream clone fail");
     thread::spawn(move|| {
@@ -32,8 +32,8 @@ fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpM
 
         //mensajes salientes del server
         match rx.try_recv() {
-            Ok(data) => {
-                match stream.write(&data) {
+            Ok(struct_in) => {
+                match stream.write(struct_in.to_bytes().as_bytes()) {
                     Ok(_) => { },
                     Err(why) => { println!("stream write failed {}", why); },
                 };
@@ -50,16 +50,16 @@ fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpM
     drop(stream);
 }
 
-fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
+fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<DataStruct>) {
     let addr = stream.peer_addr().expect("Stream peer_addr failed on subclient");
-    let mut data: TcpMessage = EMPTYTCPMESSAGE; // using 50 byte buffer
+    let mut data: [u8;256] = [0;256]; // using 50 byte buffer
     while match stream.read(&mut data) {
         Ok(size) => {
             if size==0 { 
                 println!("Connection with {}, closed", addr);
                 false 
             } else {
-                sub_tx.send(data).expect("tx subclient, falló");
+                sub_tx.send(from_bytes(&data)).expect("tx subclient, falló");
                 true
             }
         },
@@ -75,7 +75,7 @@ fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
     } {}
 }
 
-pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sender_tx: Sender<Sender<TcpMessage>>) {
+pub fn listener_launch(listener: TcpListener, client_tx: Sender<DataStruct>, sender_tx: Sender<Sender<DataStruct>>) {
     thread::spawn( move || {
         for stream in listener.incoming() {
             match stream {
@@ -100,10 +100,10 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
     });
 }
 
-pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> DataStruct {
+pub fn leer_clientes(server_rx: &Receiver<DataStruct>) -> DataStruct {
     match server_rx.try_recv() {
         Ok(msg) => {
-            from_bytes(&msg)
+            msg
         },
         Err(why) => {
             if why == TryRecvError::Empty{
@@ -124,7 +124,7 @@ pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> DataStruct {
     }
 }
 
-pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<TcpMessage>>, txs: &mut Vec<Sender<TcpMessage>>) {
+pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<DataStruct>>, txs: &mut Vec<Sender<DataStruct>>) {
     loop {
         match sender_rx.try_recv() {
             Ok(sender) => {

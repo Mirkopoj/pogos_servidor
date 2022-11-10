@@ -16,7 +16,7 @@ fn main() {
     println!("Server listening on port 3333");
     let (client_tx, server_rx) = mpsc::channel();
     let (sender_tx, sender_rx) = mpsc::channel();
-    let mut txs: Vec<Sender<TcpMessage>> = Vec::new();
+    let mut txs: Vec<Sender<DataStruct>> = Vec::new();
 
     let (tx_pogos, pogos_rx) = mpsc::channel();
     let (pogos_tx, rx_pogos) = mpsc::channel();
