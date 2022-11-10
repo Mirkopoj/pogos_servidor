@@ -26,10 +26,15 @@ fn main() {
     let (selector_tx, rx_selector) = mpsc::channel();
     selector_launch(tx_selector,rx_selector);
 
+    let (tx_cinta2, cinta2_rx) = mpsc::channel();
+    let (cinta2_tx, rx_cinta2) = mpsc::channel();
+    let (tx_sensor2, sensor2_rx) = mpsc::channel();
+    cinta2_launch(tx_cinta2,rx_cinta2,tx_sensor2);
+
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
     let (cinta1_tx, rx_cinta1) = mpsc::channel();
     let (tx_sensor1, sensor1_rx) = mpsc::channel();
-    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1);
+    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,tx_cinta2);
 
     listener_launch(listener, client_tx, sender_tx);
 

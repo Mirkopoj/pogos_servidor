@@ -188,6 +188,7 @@ pub fn cinta1_launch(
     tx_cinta: Sender<bool>,
     _rx_cinta: Receiver<bool>,
     tx_sensor: Sender<bool>,
+    tx_cinta2: Sender<bool>
 ){
     spawn(move || {
         let chip = Chip::new("gpiochip2").expect("No se abrió el chip, cinta1"); // open chip
@@ -205,12 +206,6 @@ pub fn cinta1_launch(
 
         let wait = Duration::from_secs(5);
 
-        /*loop{
-            let cinta = rx_cinta.recv().expect("Rip rx_cinta cinta1");
-            outputs.set_values([cinta]).expect("Rip cinta1");
-            tx_cinta.send(cinta).expect("Rip tx_cinta cinta1");
-            println!("Cinta {}", cinta);
-        };*/
         loop{
             outputs.set_values([true]).expect("No se seteó high, cinta1");
             tx_cinta.send(true).expect("Rip tx_cinta cinta1");
@@ -224,6 +219,43 @@ pub fn cinta1_launch(
             outputs.set_values([false]).expect("No se seteó low, cinta1");
             tx_cinta.send(false).expect("Rip tx_cinta cinta1");
             sleep(wait);
+            tx_cinta2.send(true).expect("No salió a la otra cinta, cinta1");
+        }
+    });
+}
+
+pub fn cinta2_launch(
+    tx_cinta: Sender<bool>,
+    rx_cinta: Receiver<bool>,
+    tx_sensor: Sender<bool>,
+){
+    spawn(move || {
+        let chip = Chip::new("gpiochip3").expect("No se abrió el chip, cinta2"); // open chip
+
+        let opts = Options::output([7]) // configure lines offsets
+            .values([false]) // optionally set initial values
+            .consumer("my-outputs"); // optionally set consumer string
+
+        let ipts = Options::input([5]) // configure lines offsets
+            .edge(EdgeDetect::Falling) 
+            .consumer("my-inputs"); // optionally set consumer string
+
+        let outputs = chip.request_lines(opts).expect("Pedido de lineas rechazado, cinta2 out");
+        let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta2 in");
+
+        loop{
+            rx_cinta.recv().expect("No se recivó, cinta2"); //Recibe de forma bloqueante la salida de una placa
+            outputs.set_values([true]).expect("No se seteó high, cinta2");
+            tx_cinta.send(true).expect("Rip tx_cinta cinta2");
+            while inputs.get_values([false;1]).expect("No se leyó falsse, cinta2") == [false] { }
+            tx_sensor.send(true).expect("Rip tx_sensor cinta2");
+            while inputs.get_values([false;1]).expect("No se leyó true, cinta2") == [true] {
+                let event = inputs.read_event().expect("No se leyó el evento, cinta2");
+                println!("Evento: {:?}",event);
+            }
+            tx_sensor.send(false).expect("Rip tx_sensor cinta2");
+            outputs.set_values([false]).expect("No se seteó low, cinta2");
+            tx_cinta.send(false).expect("Rip tx_cinta cinta2");
         }
     });
 }
