@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
 extern crate modulos_comunes;
+use modulos_comunes::DataStruct;
 use modulos_comunes::{TcpMessage,EMPTYTCPMESSAGE, from_bytes};
 
 mod sistema;
@@ -38,8 +39,14 @@ fn main() {
 
     listener_launch(listener, client_tx, sender_tx);
 
-    let mut prev_data = from_bytes(&EMPTYTCPMESSAGE);
-
+    let mut prev_data = DataStruct {
+        cinta1: false,
+        cinta2: false,
+        pogos: false,
+        selector: false,
+        sensor1: false,
+        sensor2: false,
+    };
     loop {
         recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
