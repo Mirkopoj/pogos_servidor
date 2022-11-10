@@ -58,9 +58,9 @@ fn main() {
             &sensor2_rx,
         );
 
-        if prev_data != from_bytes(&estado) {
+        if prev_data != estado {
             escribir_clientes(estado, &mut txs);
-            prev_data = from_bytes(&estado);
+            prev_data = estado;
             println!("salió {}", prev_data.cinta2);
         }
     }

@@ -6,7 +6,7 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE};
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, DataStruct, Convert};
 
 fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
@@ -133,8 +133,8 @@ pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<TcpMessage>>, txs:
     }
 }
 
-pub fn escribir_clientes(data: TcpMessage, txs: &mut Vec<Sender<TcpMessage>>) {
-    //if data != EMPTYTCPMESSAGE {
+pub fn escribir_clientes(struct_in: DataStruct, txs: &mut Vec<Sender<TcpMessage>>) {
+    let data = struct_in.to_bytes();
         let mut index = 0;
         let txsc = txs.clone();
         for tx in txsc {
@@ -146,6 +146,5 @@ pub fn escribir_clientes(data: TcpMessage, txs: &mut Vec<Sender<TcpMessage>>) {
             };
             index += 1;
         }
-    //}
 }
 
