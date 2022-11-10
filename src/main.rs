@@ -3,9 +3,10 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
 extern crate modulos_comunes;
-use modulos_comunes::TcpMessage;
+use modulos_comunes::{TcpMessage,EMPTYTCPMESSAGE, from_bytes};
 
 mod sistema;
+use crate::sistema::*;
 
 mod server;
 use crate::server::*;
@@ -17,16 +18,24 @@ fn main() {
     let (sender_tx, sender_rx) = mpsc::channel();
     let mut txs: Vec<Sender<TcpMessage>> = Vec::new();
 
+    let (tx_pogos, pogos_rx) = mpsc::channel();
+    let (pogos_tx, rx_pogos) = mpsc::channel();
+    pogos_launch(tx_pogos,rx_pogos);
+
     listener_launch(listener, client_tx, sender_tx);
+
+    let mut prev_data = from_bytes(&EMPTYTCPMESSAGE);
 
     loop {
         recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
         let data = leer_clientes(&server_rx);
 
-        let estado = ver_estado_del_sistema(data);
+        let estado = ver_estado_del_sistema(&data, prev_data, &pogos_rx, &pogos_tx);
 
-        escribir_clientes(data, &mut txs);
+        escribir_clientes(estado, &mut txs);
+
+        prev_data = from_bytes(&estado);
     }
 
 }
