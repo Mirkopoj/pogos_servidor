@@ -34,7 +34,7 @@ fn main() {
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
     let (cinta1_tx, rx_cinta1) = mpsc::channel();
     let (tx_sensor1, sensor1_rx) = mpsc::channel();
-    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,cinta2_tx);
+    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,cinta2_tx,pogos_tx);
 
     listener_launch(listener, client_tx, sender_tx);
 
@@ -49,7 +49,6 @@ fn main() {
             &data,
             prev_data,
             &pogos_rx,
-            &pogos_tx,
             &selector_rx,
             &selector_tx,
             &cinta1_rx,

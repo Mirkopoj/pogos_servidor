@@ -13,7 +13,6 @@ pub fn ver_estado_del_sistema(
     data: &TcpMessage,
     prev_data: DataStruct,
     pogos_rx: &Receiver<bool>,
-    pogos_tx: &Sender<bool>,
     selector_rx: &Receiver<bool>,
     selector_tx: &Sender<bool>,
     cinta1_rx: &Receiver<bool>,
@@ -25,9 +24,6 @@ pub fn ver_estado_del_sistema(
     match data {
         b"h" => {
             cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
-        },
-        b"j" => {
-            pogos_tx.send(prev_data.pogos ^ true).expect("No se envió");
         },
         b"l" => {
             selector_tx.send(prev_data.selector ^ true).expect("No se envió");
@@ -214,7 +210,8 @@ pub fn cinta1_launch(
     tx_cinta: Sender<bool>,
     _rx_cinta: Receiver<bool>,
     tx_sensor: Sender<bool>,
-    tx_cinta2: Sender<bool>
+    tx_cinta2: Sender<bool>,
+    pogos_tx: Sender<bool>,
 ){
     spawn(move || {
         let chip = Chip::new("gpiochip2").expect("No se abrió el chip, cinta1"); // open chip
@@ -244,7 +241,9 @@ pub fn cinta1_launch(
             tx_sensor.send(true).expect("Rip tx_sensor cinta1");
             outputs.set_values([false]).expect("No se seteó low, cinta1");
             tx_cinta.send(false).expect("Rip tx_cinta cinta1");
+            pogos_tx.send(true).expect("No se envió a pogos, cinta1");
             sleep(wait);
+            pogos_tx.send(false).expect("No se envió a pogos, cinta1");
             tx_cinta2.send(true).expect("No salió a la otra cinta, cinta1");
         }
     });
