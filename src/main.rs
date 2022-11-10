@@ -26,6 +26,10 @@ fn main() {
     let (selector_tx, rx_selector) = mpsc::channel();
     selector_launch(tx_selector,rx_selector);
 
+    let (tx_cinta1, cinta1_rx) = mpsc::channel();
+    let (cinta1_tx, rx_cinta1) = mpsc::channel();
+    cinta1_launch(tx_cinta1,rx_cinta1);
+
     listener_launch(listener, client_tx, sender_tx);
 
     let mut prev_data = from_bytes(&EMPTYTCPMESSAGE);
@@ -42,6 +46,8 @@ fn main() {
             &pogos_tx,
             &selector_rx,
             &selector_tx,
+            &cinta1_rx,
+            &cinta1_tx,
         );
 
         if prev_data != from_bytes(&estado) {
