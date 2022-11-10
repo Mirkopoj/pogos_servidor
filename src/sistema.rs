@@ -68,8 +68,8 @@ pub fn pogos_launch(
 ){
     spawn(move || {
         let (mut high, mut low) = (
-            Duration::from_micros(550),
-            Duration::from_micros(19450)
+            Duration::from_micros(2530),
+            Duration::from_micros(17470)
         );
 
         let chip = Chip::new("gpiochip3").expect("No se abrió el chip, pogos"); // open chip
@@ -115,8 +115,8 @@ pub fn selector_launch(
 ){
     spawn(move || {
         let (mut high, mut low) = (
-            Duration::from_micros(1200),
-            Duration::from_micros(18800)
+            Duration::from_micros(2100),
+            Duration::from_micros(17900)
         );
 
         let chip = Chip::new("gpiochip3").expect("No se abrió el chip, "); // open chip
