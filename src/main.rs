@@ -29,12 +29,12 @@ fn main() {
     let (tx_cinta2, cinta2_rx) = mpsc::channel();
     let (cinta2_tx, rx_cinta2) = mpsc::channel();
     let (tx_sensor2, sensor2_rx) = mpsc::channel();
-    cinta2_launch(tx_cinta2.clone(),rx_cinta2,tx_sensor2);
+    cinta2_launch(tx_cinta2,rx_cinta2,tx_sensor2);
 
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
     let (cinta1_tx, rx_cinta1) = mpsc::channel();
     let (tx_sensor1, sensor1_rx) = mpsc::channel();
-    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,tx_cinta2);
+    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,cinta2_tx);
 
     listener_launch(listener, client_tx, sender_tx);
 
@@ -55,12 +55,14 @@ fn main() {
             &cinta1_rx,
             &cinta1_tx,
             &sensor1_rx,
+            &cinta2_rx,
+            &sensor2_rx,
         );
 
         if prev_data != from_bytes(&estado) {
             escribir_clientes(estado, &mut txs);
             prev_data = from_bytes(&estado);
-            println!("salió {}", prev_data.cinta);
+            println!("salió {}", prev_data.cinta2);
         }
     }
 

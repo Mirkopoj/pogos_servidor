@@ -16,13 +16,15 @@ pub fn ver_estado_del_sistema(
     pogos_tx: &Sender<bool>,
     selector_rx: &Receiver<bool>,
     selector_tx: &Sender<bool>,
-    cinta_rx: &Receiver<bool>,
-    cinta_tx: &Sender<bool>,
-    sensor_rx: &Receiver<bool>,
+    cinta1_rx: &Receiver<bool>,
+    cinta1_tx: &Sender<bool>,
+    sensor1_rx: &Receiver<bool>,
+    cinta2_rx: &Receiver<bool>,
+    sensor2_rx: &Receiver<bool>,
 ) -> TcpMessage {
     match data {
         b"h" => {
-            cinta_tx.send(prev_data.cinta ^ true).expect("No se envió");
+            cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
         },
         b"j" => {
             pogos_tx.send(prev_data.pogos ^ true).expect("No se envió");
@@ -37,15 +39,27 @@ pub fn ver_estado_del_sistema(
     };
 
     let ret = DataStruct {
-        cinta: match cinta_rx.try_recv(){
+        cinta1: match cinta1_rx.try_recv(){
             Ok(on) => {
                 on
             },
             Err(why) => {
                 if why == TryRecvError::Empty {
-                    prev_data.cinta
+                    prev_data.cinta1
                 } else {
-                    panic!("Perdimos la cinta");
+                    panic!("Perdimos la cinta1");
+                }
+            },
+        },
+        cinta2: match cinta2_rx.try_recv(){
+            Ok(on) => {
+                on
+            },
+            Err(why) => {
+                if why == TryRecvError::Empty {
+                    prev_data.cinta2
+                } else {
+                    panic!("Perdimos la cinta2");
                 }
             },
         },
@@ -73,13 +87,25 @@ pub fn ver_estado_del_sistema(
                 }
             },
         },
-        sensor: match sensor_rx.try_recv(){
+        sensor1: match sensor1_rx.try_recv(){
             Ok(plac) => {
                 plac
             },
             Err(why) => {
                 if why == TryRecvError::Empty {
-                    prev_data.sensor
+                    prev_data.sensor1
+                } else {
+                    panic!("Perdimos los pogos");
+                }
+            },
+        },
+        sensor2: match sensor2_rx.try_recv(){
+            Ok(plac) => {
+                plac
+            },
+            Err(why) => {
+                if why == TryRecvError::Empty {
+                    prev_data.sensor2
                 } else {
                     panic!("Perdimos los pogos");
                 }
