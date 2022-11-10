@@ -18,7 +18,7 @@ fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpM
     let mut hay_cliente = true;
     while hay_cliente {
         //mensajes entrantes del cliente
-        match sub_rx.recv_timeout(Duration::new(1,0)) {
+        match sub_rx.recv_timeout(Duration::new(0,1)) {
             Ok(msg) => {
                 tx.send(msg).expect("sub_tx failed");
             },
@@ -134,7 +134,7 @@ pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<TcpMessage>>, txs:
 }
 
 pub fn escribir_clientes(data: TcpMessage, txs: &mut Vec<Sender<TcpMessage>>) {
-    if data != EMPTYTCPMESSAGE {
+    //if data != EMPTYTCPMESSAGE {
         let mut index = 0;
         let txsc = txs.clone();
         for tx in txsc {
@@ -146,6 +146,6 @@ pub fn escribir_clientes(data: TcpMessage, txs: &mut Vec<Sender<TcpMessage>>) {
             };
             index += 1;
         }
-    }
+    //}
 }
 

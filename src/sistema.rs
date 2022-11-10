@@ -56,13 +56,13 @@ pub fn pogos_launch(
             Duration::from_micros(19450)
         );
 
-        let chip = Chip::new("gpiochip3")?; // open chip
+        let chip = Chip::new("gpiochip3").expect("No se abrió el chip"); // open chip
 
         let opts = Options::output([4]) // configure lines offsets
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
-        let outputs = chip.request_lines(opts)?;
+        let outputs = chip.request_lines(opts).expect("Pedido de salidas rechazado");
 
         loop {
             (high,low) = match rx.try_recv(){
@@ -83,10 +83,10 @@ pub fn pogos_launch(
                         panic!("Perdimos los pogos");
                     }
                 },
-            }
-            outputs.set_values([true])?;
+            };
+            outputs.set_values([true]).expect("No se seteó el high");
             sleep(high);
-            outputs.set_values([false])?;
+            outputs.set_values([false]).expect("No se seteó el low");
             sleep(low);
         }
 

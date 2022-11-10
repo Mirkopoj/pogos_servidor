@@ -33,9 +33,11 @@ fn main() {
 
         let estado = ver_estado_del_sistema(&data, prev_data, &pogos_rx, &pogos_tx);
 
-        escribir_clientes(estado, &mut txs);
-
-        prev_data = from_bytes(&estado);
+        if prev_data != from_bytes(&estado) {
+            escribir_clientes(estado, &mut txs);
+            prev_data = from_bytes(&estado);
+            //println!("salió {}", prev_data.pogos);
+        }
     }
 
 }
