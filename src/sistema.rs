@@ -2,7 +2,7 @@ use std::sync::mpsc::{Receiver,TryRecvError, Sender};
 use std::thread::{spawn,sleep};
 use std::time::Duration;
 
-use gpiod::{Chip, Options, EdgeDetect};
+use gpiod::{Chip, Options};
 
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, DataStruct, Convert};
@@ -183,18 +183,18 @@ pub fn cinta1_launch(
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
-        let ipts = Options::input([3]) // configure lines offsets
+        /*let ipts = Options::input([3]) // configure lines offsets
             .edge(EdgeDetect::Rising) 
             .consumer("my-inputs"); // optionally set consumer string
-
+*/
         let outputs = chip.request_lines(opts).expect("Pedido de lineas rechazado, cinta1 out");
-        let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
+        //let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
 
-        let wait = Duration::from_secs(5);
+        //let wait = Duration::from_secs(5);
 
         loop{
             let cinta = rx.recv().expect("Rip rx cinta1");
-            outputs.set_values([cinta]);
+            outputs.set_values([cinta]).expect("Rip cinta1");
             tx.send(cinta).expect("Rip tx cinta1");
         };
         /*loop{
