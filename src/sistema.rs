@@ -3,6 +3,8 @@ use std::thread::{spawn,sleep};
 use std::time::Duration;
 
 use gpiod::{Chip, Options, EdgeDetect};
+extern crate i2c_linux;
+use i2c_linux::I2c;
 
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, DataStruct, Convert};
@@ -227,7 +229,6 @@ pub fn cinta1_launch(
         let outputs = chip.request_lines(opts).expect("Pedido de lineas rechazado, cinta1 out");
         let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
 
-        let wait = Duration::from_secs(5);
         let pausa = Duration::from_secs(1);
 
         loop{
@@ -244,7 +245,7 @@ pub fn cinta1_launch(
             tx_cinta.send(false).expect("Rip tx_cinta cinta1");
             sleep(pausa);
             pogos_tx.send(true).expect("No se envió a pogos, cinta1");
-            sleep(wait);
+            probar_placa();
             pogos_tx.send(false).expect("No se envió a pogos, cinta1");
             sleep(pausa);
             tx_cinta2.send(true).expect("No salió a la otra cinta, cinta1");
@@ -286,4 +287,35 @@ pub fn cinta2_launch(
             tx_cinta.send(false).expect("Rip tx_cinta cinta2");
         }
     });
+}
+
+fn adc() -> [f64;3] {
+    let mut i2c = I2c::from_path("/dev/i2c-0").expect("i2c");
+    i2c.smbus_set_slave_address(0x08, false).expect("addr");
+    let mut cont = 0;
+    i2c.smbus_write_byte(42).expect("Write");//Sincronizar el pic
+    let mut tensiones: [f64;3] = [0.0;3];
+    for _ in 0..3000{
+        let adch = i2c.smbus_read_byte().expect("ReadH") as u16;
+        let adcl = i2c.smbus_read_byte().expect("ReadL") as u16;
+        let adc:u16 = (adch <<8) + adcl;
+        let tension = adc as f64 * 0.003225806452;
+        tensiones[cont as usize] += tension;
+        cont += 1;
+        cont %= 3;
+        sleep(Duration::from_millis(1));
+    }
+
+    for v in tensiones.as_mut() {
+        *v /= 1000.0;
+    }
+
+    tensiones
+}
+
+fn probar_placa(){
+    let tensiones = adc();
+    println!("{:?}",tensiones);
+    let wait = Duration::from_secs(5);
+    sleep(wait);
 }

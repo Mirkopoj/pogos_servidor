@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 modulos_comunes = { path = "../modulos_comunes" }
 gpiod = "0.2.2"
+i2c-linux = "0.1.2"
