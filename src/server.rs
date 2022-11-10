@@ -100,14 +100,22 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
     });
 }
 
-pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> TcpMessage {
+pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> DataStruct {
     match server_rx.try_recv() {
         Ok(msg) => {
-            msg
+            msg.to_bytes();
         },
         Err(why) => {
             if why == TryRecvError::Empty{
-                EMPTYTCPMESSAGE
+                DataStruct {
+                    cinta1: false,
+                    cinta2: false,
+                    pogos: false,
+                    selector: false,
+                    sensor1: false,
+                    sensor2: false,
+                    caracter: [0;1],
+                }
             }
             else {
                 panic!("server_rx failed");

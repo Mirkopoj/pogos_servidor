@@ -45,6 +45,7 @@ fn main() {
         selector: false,
         sensor1: false,
         sensor2: false,
+        caracter: [0;1],
     };
 
     loop {
@@ -53,7 +54,7 @@ fn main() {
         let data = leer_clientes(&server_rx);
 
         let estado = ver_estado_del_sistema(
-            &data,
+            data,
             prev_data,
             &pogos_rx,
             &selector_rx,
