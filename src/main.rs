@@ -3,8 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
 extern crate modulos_comunes;
-use modulos_comunes::DataStruct;
-use modulos_comunes::{TcpMessage,EMPTYTCPMESSAGE, from_bytes};
+use modulos_comunes::{DataStruct,TcpMessage};
 
 mod sistema;
 use crate::sistema::*;
@@ -47,6 +46,7 @@ fn main() {
         sensor1: false,
         sensor2: false,
     };
+
     loop {
         recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
