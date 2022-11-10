@@ -12,7 +12,7 @@ use modulos_comunes::{TcpMessage, DataStruct};
 fn pausa(){}
 
 pub fn ver_estado_del_sistema(
-    data: &TcpMessage,
+    data: DataStruct,
     prev_data: DataStruct,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
@@ -23,7 +23,7 @@ pub fn ver_estado_del_sistema(
     cinta2_rx: &Receiver<bool>,
     sensor2_rx: &Receiver<bool>,
 ) -> DataStruct {
-    match data {
+    match data.caracter {
         b"h" => {
             cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
         },
