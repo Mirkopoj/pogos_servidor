@@ -7,7 +7,7 @@ extern crate i2c_linux;
 use i2c_linux::I2c;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, DataStruct};
+use modulos_comunes::DataStruct;
 
 fn pausa(){}
 
@@ -23,7 +23,7 @@ pub fn ver_estado_del_sistema(
     cinta2_rx: &Receiver<bool>,
     sensor2_rx: &Receiver<bool>,
 ) -> DataStruct {
-    match data.caracter {
+    match &data.caracter {
         b"h" => {
             cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
         },
@@ -109,6 +109,7 @@ pub fn ver_estado_del_sistema(
                 }
             },
         },
+        caracter: [0;1],
     };
 
     ret
