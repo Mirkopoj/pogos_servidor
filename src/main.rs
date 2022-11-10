@@ -22,6 +22,10 @@ fn main() {
     let (pogos_tx, rx_pogos) = mpsc::channel();
     pogos_launch(tx_pogos,rx_pogos);
 
+    let (tx_selector, selector_rx) = mpsc::channel();
+    let (selector_tx, rx_selector) = mpsc::channel();
+    selector_launch(tx_selector,rx_selector);
+
     listener_launch(listener, client_tx, sender_tx);
 
     let mut prev_data = from_bytes(&EMPTYTCPMESSAGE);
@@ -31,12 +35,19 @@ fn main() {
 
         let data = leer_clientes(&server_rx);
 
-        let estado = ver_estado_del_sistema(&data, prev_data, &pogos_rx, &pogos_tx);
+        let estado = ver_estado_del_sistema(
+            &data,
+            prev_data,
+            &pogos_rx,
+            &pogos_tx,
+            &selector_rx,
+            &selector_tx,
+        );
 
         if prev_data != from_bytes(&estado) {
             escribir_clientes(estado, &mut txs);
             prev_data = from_bytes(&estado);
-            //println!("salió {}", prev_data.pogos);
+            println!("salió {}", prev_data.selector);
         }
     }
 
