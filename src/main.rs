@@ -29,7 +29,7 @@ fn main() {
     let (tx_cinta2, cinta2_rx) = mpsc::channel();
     let (cinta2_tx, rx_cinta2) = mpsc::channel();
     let (tx_sensor2, sensor2_rx) = mpsc::channel();
-    cinta2_launch(tx_cinta2,rx_cinta2,tx_sensor2);
+    cinta2_launch(tx_cinta2.clone(),rx_cinta2,tx_sensor2);
 
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
     let (cinta1_tx, rx_cinta1) = mpsc::channel();
