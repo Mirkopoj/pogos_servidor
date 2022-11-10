@@ -179,7 +179,7 @@ pub fn cinta1_launch(
     spawn(move || {
         let chip = Chip::new("gpiochip2").expect("No se abrió el chip, cinta1"); // open chip
 
-        let opts = Options::output([3]) // configure lines offsets
+        let opts = Options::output([19]) // configure lines offsets
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
