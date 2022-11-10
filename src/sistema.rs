@@ -2,7 +2,7 @@ use std::sync::mpsc::{Receiver,TryRecvError, Sender};
 use std::thread::{spawn,sleep};
 use std::time::Duration;
 
-use gpiod::{Chip, Options};
+use gpiod::{Chip, Options, EdgeDetect};
 
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, DataStruct, Convert};
@@ -18,6 +18,7 @@ pub fn ver_estado_del_sistema(
     selector_tx: &Sender<bool>,
     cinta_rx: &Receiver<bool>,
     cinta_tx: &Sender<bool>,
+    sensor_rx: &Receiver<bool>,
 ) -> TcpMessage {
     match data {
         b"h" => {
@@ -72,7 +73,18 @@ pub fn ver_estado_del_sistema(
                 }
             },
         },
-        sensor: false,
+        sensor: match sensor_rx.try_recv(){
+            Ok(plac) => {
+                plac
+            },
+            Err(why) => {
+                if why == TryRecvError::Empty {
+                    prev_data.sensor
+                } else {
+                    panic!("Perdimos los pogos");
+                }
+            },
+        },
     }.to_bytes();
 
     ret
@@ -173,8 +185,9 @@ pub fn selector_launch(
 }
 
 pub fn cinta1_launch(
-    tx: Sender<bool>,
-    rx: Receiver<bool>,
+    tx_cinta: Sender<bool>,
+    rx_cinta: Receiver<bool>,
+    tx_sensor: Sender<bool>,
 ){
     spawn(move || {
         let chip = Chip::new("gpiochip2").expect("No se abrió el chip, cinta1"); // open chip
@@ -183,30 +196,34 @@ pub fn cinta1_launch(
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
-        /*let ipts = Options::input([3]) // configure lines offsets
+        let ipts = Options::input([2]) // configure lines offsets
             .edge(EdgeDetect::Rising) 
             .consumer("my-inputs"); // optionally set consumer string
-*/
+
         let outputs = chip.request_lines(opts).expect("Pedido de lineas rechazado, cinta1 out");
-        //let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
+        let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
 
-        //let wait = Duration::from_secs(5);
+        let wait = Duration::from_secs(5);
 
-        loop{
-            let cinta = rx.recv().expect("Rip rx cinta1");
-            outputs.set_values([cinta]).expect("Rip cinta1");
-            tx.send(cinta).expect("Rip tx cinta1");
-            println!("Cinta {}", cinta);
-        };
         /*loop{
+            let cinta = rx_cinta.recv().expect("Rip rx_cinta cinta1");
+            outputs.set_values([cinta]).expect("Rip cinta1");
+            tx_cinta.send(cinta).expect("Rip tx_cinta cinta1");
+            println!("Cinta {}", cinta);
+        };*/
+        loop{
             outputs.set_values([true]).expect("No se seteó high, cinta1");
+            tx_cinta.send(true).expect("Rip tx_cinta cinta1");
             while inputs.get_values([false;1]).expect("No se leyó true, cinta1") == [true] { }
+            tx_sensor.send(false).expect("Rip tx_sensor cinta1");
             while inputs.get_values([false;1]).expect("No se leyó false, cinta1") == [false] {
                 let event = inputs.read_event().expect("No se leyó el evento, cinta1");
                 println!("Evento: {:}",event);
             }
+            tx_sensor.send(true).expect("Rip tx_sensor cinta1");
             outputs.set_values([false]).expect("No se seteó low, cinta1");
+            tx_cinta.send(false).expect("Rip tx_cinta cinta1");
             sleep(wait);
-        }*/
+        }
     });
 }

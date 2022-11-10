@@ -28,7 +28,8 @@ fn main() {
 
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
     let (cinta1_tx, rx_cinta1) = mpsc::channel();
-    cinta1_launch(tx_cinta1,rx_cinta1);
+    let (tx_sensor1, sensor1_rx) = mpsc::channel();
+    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1);
 
     listener_launch(listener, client_tx, sender_tx);
 
@@ -48,6 +49,7 @@ fn main() {
             &selector_tx,
             &cinta1_rx,
             &cinta1_tx,
+            &sensor1_rx,
         );
 
         if prev_data != from_bytes(&estado) {
