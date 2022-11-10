@@ -186,7 +186,7 @@ pub fn selector_launch(
 
 pub fn cinta1_launch(
     tx_cinta: Sender<bool>,
-    rx_cinta: Receiver<bool>,
+    _rx_cinta: Receiver<bool>,
     tx_sensor: Sender<bool>,
 ){
     spawn(move || {
