@@ -118,8 +118,8 @@ pub fn pogos_launch(
 ){
     spawn(move || {
         let (mut high, mut low) = (
-            Duration::from_micros(2530),
-            Duration::from_micros(17470)
+            Duration::from_micros(600),
+            Duration::from_micros(19600)
         );
 
         let chip = Chip::new("gpiochip3").expect("No se abrió el chip, pogos"); // open chip
@@ -135,11 +135,11 @@ pub fn pogos_launch(
                 Ok(pos) => {
                     tx.send(pos).expect("Chingo el msg, pogos");
                     if pos {(
-                        Duration::from_micros(550),
-                        Duration::from_micros(19450)
-                    )} else {(
                         Duration::from_micros(2530),
                         Duration::from_micros(17470)
+                    )} else {(
+                        Duration::from_micros(600),
+                        Duration::from_micros(19600)
                     )}
                 },
                 Err(why) => {
@@ -228,6 +228,7 @@ pub fn cinta1_launch(
         let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
 
         let wait = Duration::from_secs(5);
+        let pausa = Duration::from_secs(1);
 
         loop{
             outputs.set_values([true]).expect("No se seteó high, cinta1");
@@ -241,9 +242,11 @@ pub fn cinta1_launch(
             tx_sensor.send(true).expect("Rip tx_sensor cinta1");
             outputs.set_values([false]).expect("No se seteó low, cinta1");
             tx_cinta.send(false).expect("Rip tx_cinta cinta1");
+            sleep(pausa);
             pogos_tx.send(true).expect("No se envió a pogos, cinta1");
             sleep(wait);
             pogos_tx.send(false).expect("No se envió a pogos, cinta1");
+            sleep(pausa);
             tx_cinta2.send(true).expect("No salió a la otra cinta, cinta1");
         }
     });
