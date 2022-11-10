@@ -196,6 +196,7 @@ pub fn cinta1_launch(
             let cinta = rx.recv().expect("Rip rx cinta1");
             outputs.set_values([cinta]).expect("Rip cinta1");
             tx.send(cinta).expect("Rip tx cinta1");
+            println!("Cinta {}", cinta);
         };
         /*loop{
             outputs.set_values([true]).expect("No se seteó high, cinta1");
