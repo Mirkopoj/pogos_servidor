@@ -9,8 +9,12 @@ use modulos_comunes::{TcpMessage, DataStruct, Convert};
 
 fn pausa(){}
 
+fn emergencia(){}
+
+fn inicio(){}
+
 pub fn ver_estado_del_sistema(
-    data: &TcpMessage,
+    data: char,
     prev_data: DataStruct,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
@@ -22,13 +26,19 @@ pub fn ver_estado_del_sistema(
     sensor2_rx: &Receiver<bool>,
 ) -> TcpMessage {
     match data {
-        b"h" => {
+        'h' => {
             cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
         },
-        b"l" => {
+        'l' => {
             selector_tx.send(prev_data.selector ^ true).expect("No se envió");
         },
-        b"p" => {
+        'e' => {
+            emergencia();
+        }
+        's' => {
+            inicio();
+        }
+        'p' => {
             pausa();
         }
         _ => {}
@@ -107,6 +117,7 @@ pub fn ver_estado_del_sistema(
                 }
             },
         },
+        caracter: Default::default(),
     }.to_bytes();
 
     ret

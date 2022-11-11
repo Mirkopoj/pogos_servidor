@@ -46,7 +46,7 @@ fn main() {
         let data = leer_clientes(&server_rx);
 
         let estado = ver_estado_del_sistema(
-            &data,
+            data,
             prev_data,
             &pogos_rx,
             &selector_rx,

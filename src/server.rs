@@ -6,7 +6,7 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE};
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes};
 
 fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
@@ -100,14 +100,14 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
     });
 }
 
-pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> TcpMessage {
+pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> char {
     match server_rx.try_recv() {
         Ok(msg) => {
-            msg
+            from_bytes(&msg).caracter
         },
         Err(why) => {
             if why == TryRecvError::Empty{
-                EMPTYTCPMESSAGE
+                Default::default()
             }
             else {
                 panic!("server_rx failed");
