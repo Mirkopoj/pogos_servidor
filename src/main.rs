@@ -47,7 +47,7 @@ fn main() {
 
         let data = leer_clientes(&server_rx, &mut estado);
 
-        let estado = ver_estado_del_sistema(
+        let situacion = ver_estado_del_sistema(
             data,
             &mut estado,
             prev_data,
@@ -61,9 +61,9 @@ fn main() {
             &sensor2_rx,
         );
 
-        if prev_data != from_bytes(&estado) {
-            escribir_clientes(estado, &mut txs);
-            prev_data = from_bytes(&estado);
+        if prev_data != from_bytes(&situacion) {
+            escribir_clientes(situacion, &mut txs);
+            prev_data = from_bytes(&situacion);
             println!("salió {:?}", prev_data.estado);
         }
     }
