@@ -65,6 +65,7 @@ fn main() {
             escribir_clientes(situacion, &mut txs);
             prev_data = from_bytes(&situacion);
             println!("salió {:?}", prev_data.estado);
+            println!("Estado: {:?}", estado);
         }
     }
 

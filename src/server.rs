@@ -110,7 +110,6 @@ pub fn leer_clientes(server_rx: &Receiver<TcpMessage>, estado: &mut Estado) -> c
             _ => {},
         };
     }
-    println!("Estado: {:?}", *estado);
     match server_rx.try_recv() {
         Ok(msg) => {
             from_bytes(&msg).caracter
