@@ -6,7 +6,9 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes};
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes, Estado};
+
+use crate::sistema::gestionar_estado;
 
 fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
@@ -100,7 +102,14 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
     });
 }
 
-pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> char {
+pub fn leer_clientes(server_rx: &Receiver<TcpMessage>, estado: &mut Estado) -> char {
+    while *estado != Estado::Marcha {
+        let data = from_bytes(&server_rx.recv().expect("server_rx, bloqueante, failed")).caracter;
+        match data {
+            'e'|'p'|'s' => { gestionar_estado(data, estado); },
+            _ => {},
+        };
+    }
     match server_rx.try_recv() {
         Ok(msg) => {
             from_bytes(&msg).caracter
@@ -134,18 +143,17 @@ pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<TcpMessage>>, txs:
 }
 
 pub fn escribir_clientes(data: TcpMessage, txs: &mut Vec<Sender<TcpMessage>>) {
-    //if data != EMPTYTCPMESSAGE {
-        let mut index = 0;
-        let txsc = txs.clone();
-        for tx in txsc {
-            match tx.send(data){
-                Ok(_) => { },
-                Err(_) => {
-                    txs.remove(index);
-                },
-            };
-            index += 1;
-        }
-    //}
+    let mut index = 0;
+    let txsc = txs.clone();
+    for tx in txsc {
+        match tx.send(data){
+            Ok(_) => {
+                index += 1;
+            },
+            Err(_) => {
+                txs.remove(index);
+            },
+        };
+    }
 }
 

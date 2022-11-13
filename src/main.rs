@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage,EMPTYTCPMESSAGE, from_bytes};
+use modulos_comunes::{TcpMessage, from_bytes, Estado};
 
 mod sistema;
 use crate::sistema::*;
@@ -38,15 +38,18 @@ fn main() {
 
     listener_launch(listener, client_tx, sender_tx);
 
-    let mut prev_data = from_bytes(&EMPTYTCPMESSAGE);
+    let mut prev_data = Default::default();
+
+    let mut estado = Estado::Parado;
 
     loop {
         recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
-        let data = leer_clientes(&server_rx);
+        let data = leer_clientes(&server_rx, &mut estado);
 
         let estado = ver_estado_del_sistema(
             data,
+            &mut estado,
             prev_data,
             &pogos_rx,
             &selector_rx,
