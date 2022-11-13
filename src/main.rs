@@ -64,7 +64,7 @@ fn main() {
         if prev_data != from_bytes(&estado) {
             escribir_clientes(estado, &mut txs);
             prev_data = from_bytes(&estado);
-            println!("salió {}", prev_data.estado);
+            println!("salió {:?}", prev_data.estado);
         }
     }
 

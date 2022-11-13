@@ -47,7 +47,7 @@ checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 [[package]]
 name = "modulos_comunes"
 version = "0.1.0"
-source = "git+https://github.com/Mirkopoj/modulos_comunes.git?branch=funca#8fa3d9d9e7a73429195e15c5b83a51e4d679e6cc"
+source = "git+https://github.com/Mirkopoj/modulos_comunes.git?branch=funca#630e1a701e86bf87dc1e8b8d0bc245e043ba2f29"
 
 [[package]]
 name = "nix"
