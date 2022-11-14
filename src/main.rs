@@ -1,5 +1,5 @@
 use std::net::TcpListener;
-use std::sync::mpsc;
+use std::sync::{Arc,Mutex,mpsc};
 use std::sync::mpsc::{Sender,Receiver};
 
 extern crate modulos_comunes;
@@ -39,28 +39,28 @@ fn main() {
     let (tx_sensor1, sensor1_rx) = mpsc::channel();
     cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,cinta2_tx,pogos_tx);
 
-    listener_launch(listener, client_tx, sender_tx);
+    let prev_data:Arc<Mutex<DataStruct>> = Arc::new(Mutex::new(Default::default()));
 
-    let mut prev_data:DataStruct = Default::default();
+    listener_launch(listener, client_tx, sender_tx, prev_data.clone());
 
     let mut estado = Estado::Parado;
 
     loop {
         match estado {
             Estado::Marcha => {
-                recibir_conecciones_nuevas(&sender_rx, &mut txs, prev_data.to_bytes());
+                recibir_conecciones_nuevas(&sender_rx, &mut txs, prev_data.lock().expect("lock, recibir_conecciones_nuevas").to_bytes());
 
                 let data = leer_clientes(&server_rx);
 
-                actualizar_al_cliente(data, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(data, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
             },
             Estado::Pausa => {
                 let nuevo = espear_cambio_de_estado(&server_rx);
-                actualizar_al_cliente(nuevo, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
             },
             Estado::Parado => {
                 let nuevo = espear_cambio_de_estado(&server_rx);
-                actualizar_al_cliente(nuevo, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
             },
         }
     }
@@ -69,7 +69,7 @@ fn main() {
 fn actualizar_al_cliente(
     data: char,
     estado: &mut Estado,
-    prev_data: &mut DataStruct,
+    prev_data: &Arc<Mutex<DataStruct>>,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
     selector_tx: &Sender<bool>,
@@ -82,10 +82,12 @@ fn actualizar_al_cliente(
 ){
     gestionar_estado(data, estado);
 
+    let mut prev_data_locked = prev_data.lock().expect("lock, actualizar_al_cliente");
+
     let situacion = ver_estado_del_sistema(
         data,
         &*estado,
-        *prev_data,
+        *prev_data_locked,
         &pogos_rx,
         &selector_rx,
         &selector_tx,
@@ -96,8 +98,8 @@ fn actualizar_al_cliente(
         &sensor2_rx,
     );
 
-    if *prev_data != from_bytes(&situacion) {
+    if *prev_data_locked != from_bytes(&situacion) {
         escribir_clientes(situacion, txs);
-        *prev_data = from_bytes(&situacion);
+        *prev_data_locked = from_bytes(&situacion);
     }
 }

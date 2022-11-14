@@ -1,12 +1,12 @@
-use std::thread;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write, ErrorKind};
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc, Mutex};
 use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
+use std::thread;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes};
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes, DataStruct, Convert};
 
 fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
@@ -75,7 +75,7 @@ fn handle_subclient(mut stream: TcpStream, sub_tx: Sender<TcpMessage>) {
     } {}
 }
 
-pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sender_tx: Sender<Sender<TcpMessage>>) {
+pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sender_tx: Sender<Sender<TcpMessage>>, estado_actual: Arc<Mutex<DataStruct>>) {
     thread::spawn( move || {
         for stream in listener.incoming() {
             match stream {
@@ -83,6 +83,7 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
                     println!("New connection: {}", stream.peer_addr().expect("Stream peer_addr failed on new connection"));
                     let (server_tx, client_rx) = mpsc::channel();
                     let txcli = client_tx.clone();
+                    server_tx.send(estado_actual.lock().expect("lock, listener").to_bytes()).expect("Falló greater al cliente");
                     sender_tx.clone().send(server_tx).expect("sendersender fail");
                     thread::spawn(move|| {
                         // connection succeeded
