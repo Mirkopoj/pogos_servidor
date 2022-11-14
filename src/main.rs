@@ -3,7 +3,7 @@ use std::sync::{Arc,Mutex,mpsc};
 use std::sync::mpsc::{Sender,Receiver};
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, from_bytes, Estado, DataStruct, Convert};
+use modulos_comunes::{TcpMessage, from_bytes, Estado, DataStruct};
 
 mod sistema;
 use crate::sistema::*;
@@ -48,7 +48,7 @@ fn main() {
     loop {
         match estado {
             Estado::Marcha => {
-                recibir_conecciones_nuevas(&sender_rx, &mut txs, prev_data.lock().expect("lock, recibir_conecciones_nuevas").to_bytes());
+                recibir_conecciones_nuevas(&sender_rx, &mut txs);
 
                 let data = leer_clientes(&server_rx);
 

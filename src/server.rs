@@ -120,12 +120,10 @@ pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> char {
 pub fn recibir_conecciones_nuevas(
     sender_rx: &Receiver<Sender<TcpMessage>>,
     txs: &mut Vec<Sender<TcpMessage>>,
-    data: TcpMessage
 ) {
     loop {
         match sender_rx.try_recv() {
             Ok(sender) => {
-                sender.send(data).expect("Falló, greater al cliente");
                 txs.push(sender);
             },
             Err(why) => {
