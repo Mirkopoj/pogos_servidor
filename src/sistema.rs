@@ -7,38 +7,9 @@ use gpiod::{Chip, Options, EdgeDetect};
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, DataStruct, Convert, Estado};
 
-fn pausa(estado: &mut Estado){
-    match estado {
-        Estado::Pausa => {
-            *estado = Estado::Marcha;
-        },
-        Estado::Marcha => {
-            *estado = Estado::Pausa;
-        },
-        _ => { },
-    }
-}
-
-fn emergencia(estado: &mut Estado){
-    *estado = Estado::Parado;
-}
-
-fn inicio(estado: &mut Estado){
-    *estado = Estado::Marcha;
-}
-
-pub fn gestionar_estado(nuevo: char, estado: &mut Estado){
-    match nuevo {
-        'p' => { pausa(estado); },
-        'e' => { emergencia(estado); },
-        's' => { inicio(estado); },
-         _  => { },
-    }
-}
-
 pub fn ver_estado_del_sistema(
     data: char,
-    estado: &mut Estado,
+    estado: &Estado,
     prev_data: DataStruct,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
@@ -56,9 +27,6 @@ pub fn ver_estado_del_sistema(
         'l' => {
             selector_tx.send(prev_data.selector ^ true).expect("No se envió");
         },
-        'e'|'s'|'p' => {
-            gestionar_estado(data, estado);
-        }
         _ => {}
     };
 

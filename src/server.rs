@@ -6,9 +6,7 @@ use std::sync::mpsc::{Receiver, Sender, TryRecvError, RecvTimeoutError};
 use std::time::Duration;
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes, Estado};
-
-use crate::sistema::gestionar_estado;
+use modulos_comunes::{TcpMessage, EMPTYTCPMESSAGE, from_bytes};
 
 fn handle_client(mut stream: TcpStream, tx:Sender<TcpMessage>, rx: Receiver<TcpMessage>) {
     let (sub_tx, sub_rx) = mpsc::channel();
@@ -102,14 +100,7 @@ pub fn listener_launch(listener: TcpListener, client_tx: Sender<TcpMessage>, sen
     });
 }
 
-pub fn leer_clientes(server_rx: &Receiver<TcpMessage>, estado: &mut Estado) -> char {
-    while *estado != Estado::Marcha {
-        let data = from_bytes(&server_rx.recv().expect("server_rx, bloqueante, failed")).caracter;
-        match data {
-            'e'|'p'|'s' => { gestionar_estado(data, estado); },
-            _ => {},
-        };
-    }
+pub fn leer_clientes(server_rx: &Receiver<TcpMessage>) -> char {
     match server_rx.try_recv() {
         Ok(msg) => {
             from_bytes(&msg).caracter
@@ -125,10 +116,15 @@ pub fn leer_clientes(server_rx: &Receiver<TcpMessage>, estado: &mut Estado) -> c
     }
 }
 
-pub fn recibir_conecciones_nuevas(sender_rx: &Receiver<Sender<TcpMessage>>, txs: &mut Vec<Sender<TcpMessage>>) {
+pub fn recibir_conecciones_nuevas(
+    sender_rx: &Receiver<Sender<TcpMessage>>,
+    txs: &mut Vec<Sender<TcpMessage>>,
+    data: TcpMessage
+) {
     loop {
         match sender_rx.try_recv() {
             Ok(sender) => {
+                sender.send(data).expect("Falló, greater al cliente");
                 txs.push(sender);
             },
             Err(why) => {

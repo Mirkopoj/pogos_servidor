@@ -1,15 +1,18 @@
 use std::net::TcpListener;
 use std::sync::mpsc;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Sender,Receiver};
 
 extern crate modulos_comunes;
-use modulos_comunes::{TcpMessage, from_bytes, Estado};
+use modulos_comunes::{TcpMessage, from_bytes, Estado, DataStruct, Convert};
 
 mod sistema;
 use crate::sistema::*;
 
 mod server;
 use crate::server::*;
+
+mod estados;
+use crate::estados::*;
 
 fn main() {
     let listener = TcpListener::bind("0.0.0.0:3333").expect("listener failed on bind");
@@ -38,35 +41,63 @@ fn main() {
 
     listener_launch(listener, client_tx, sender_tx);
 
-    let mut prev_data = Default::default();
+    let mut prev_data:DataStruct = Default::default();
 
     let mut estado = Estado::Parado;
 
     loop {
-        recibir_conecciones_nuevas(&sender_rx, &mut txs);
+        match estado {
+            Estado::Marcha => {
+                recibir_conecciones_nuevas(&sender_rx, &mut txs, prev_data.to_bytes());
 
-        let data = leer_clientes(&server_rx, &mut estado);
+                let data = leer_clientes(&server_rx);
 
-        let situacion = ver_estado_del_sistema(
-            data,
-            &mut estado,
-            prev_data,
-            &pogos_rx,
-            &selector_rx,
-            &selector_tx,
-            &cinta1_rx,
-            &cinta1_tx,
-            &sensor1_rx,
-            &cinta2_rx,
-            &sensor2_rx,
-        );
-
-        if prev_data != from_bytes(&situacion) {
-            escribir_clientes(situacion, &mut txs);
-            prev_data = from_bytes(&situacion);
-            println!("salió {:?}", prev_data.estado);
-            println!("Estado: {:?}", estado);
+                actualizar_al_cliente(data, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+            },
+            Estado::Pausa => {
+                let nuevo = espear_cambio_de_estado(&server_rx);
+                actualizar_al_cliente(nuevo, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+            },
+            Estado::Parado => {
+                let nuevo = espear_cambio_de_estado(&server_rx);
+                actualizar_al_cliente(nuevo, &mut estado, &mut prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+            },
         }
     }
+}
 
+fn actualizar_al_cliente(
+    data: char,
+    estado: &mut Estado,
+    prev_data: &mut DataStruct,
+    pogos_rx: &Receiver<bool>,
+    selector_rx: &Receiver<bool>,
+    selector_tx: &Sender<bool>,
+    cinta1_rx: &Receiver<bool>,
+    cinta1_tx: &Sender<bool>,
+    sensor1_rx: &Receiver<bool>,
+    cinta2_rx: &Receiver<bool>,
+    sensor2_rx: &Receiver<bool>,
+    txs: &mut Vec<Sender<TcpMessage>>
+){
+    gestionar_estado(data, estado);
+
+    let situacion = ver_estado_del_sistema(
+        data,
+        &*estado,
+        *prev_data,
+        &pogos_rx,
+        &selector_rx,
+        &selector_tx,
+        &cinta1_rx,
+        &cinta1_tx,
+        &sensor1_rx,
+        &cinta2_rx,
+        &sensor2_rx,
+    );
+
+    if *prev_data != from_bytes(&situacion) {
+        escribir_clientes(situacion, txs);
+        *prev_data = from_bytes(&situacion);
+    }
 }
