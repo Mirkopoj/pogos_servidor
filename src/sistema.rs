@@ -7,28 +7,20 @@ use gpiod::{Chip, Options, EdgeDetect};
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, DataStruct, Convert, Estado};
 
+extern crate pruebas;
+use pruebas::{TestData, prueba};
+
 pub fn ver_estado_del_sistema(
-    data: char,
     estado: &Estado,
     prev_data: DataStruct,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
-    selector_tx: &Sender<bool>,
     cinta1_rx: &Receiver<bool>,
-    cinta1_tx: &Sender<bool>,
     sensor1_rx: &Receiver<bool>,
     cinta2_rx: &Receiver<bool>,
     sensor2_rx: &Receiver<bool>,
+    pruebas_rx: &Receiver<TestData>,
 ) -> TcpMessage {
-    match data {
-        'h' => {
-            cinta1_tx.send(prev_data.cinta1 ^ true).expect("No se envió");
-        },
-        'l' => {
-            selector_tx.send(prev_data.selector ^ true).expect("No se envió");
-        },
-        _ => {}
-    };
 
     let ret = DataStruct {
         cinta1: match cinta1_rx.try_recv(){
@@ -105,6 +97,18 @@ pub fn ver_estado_del_sistema(
         },
         caracter: Default::default(),
         estado: *estado,
+        pruebas: match pruebas_rx.try_recv(){
+            Ok(plac) => {
+                plac
+            },
+            Err(why) => {
+                if why == TryRecvError::Empty {
+                    prev_data.pruebas
+                } else {
+                    panic!("Perdimos las pruebas");
+                }
+            },
+        },
     }.to_bytes();
 
     ret
@@ -206,10 +210,12 @@ pub fn selector_launch(
 
 pub fn cinta1_launch(
     tx_cinta: Sender<bool>,
-    _rx_cinta: Receiver<bool>,
     tx_sensor: Sender<bool>,
     tx_cinta2: Sender<bool>,
     pogos_tx: Sender<bool>,
+    tx_selector: Sender<bool>,
+    pruebas_tx: Sender<TestData>,
+    pruebas_pausa_rx: Receiver<bool>,
 ){
     spawn(move || {
         let chip = Chip::new("gpiochip2").expect("No se abrió el chip, cinta1"); // open chip
@@ -225,7 +231,6 @@ pub fn cinta1_launch(
         let outputs = chip.request_lines(opts).expect("Pedido de lineas rechazado, cinta1 out");
         let mut inputs = chip.request_lines(ipts).expect("Pedido de lines rechazado, cinta1 in");
 
-        let wait = Duration::from_secs(5);
         let pausa = Duration::from_secs(1);
 
         loop{
@@ -242,7 +247,12 @@ pub fn cinta1_launch(
             tx_cinta.send(false).expect("Rip tx_cinta cinta1");
             sleep(pausa);
             pogos_tx.send(true).expect("No se envió a pogos, cinta1");
-            sleep(wait);
+            tx_selector
+                .send(
+                    prueba(&pruebas_tx, &pruebas_pausa_rx)
+                    .expect("No se pudo enviar una prueba")
+                    )
+                .expect("No se envió, selector");
             pogos_tx.send(false).expect("No se envió a pogos, cinta1");
             sleep(pausa);
             tx_cinta2.send(true).expect("No salió a la otra cinta, cinta1");

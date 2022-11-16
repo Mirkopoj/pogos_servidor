@@ -4,6 +4,7 @@ use std::sync::mpsc::{Sender,Receiver};
 
 extern crate modulos_comunes;
 use modulos_comunes::{TcpMessage, from_bytes, Estado, DataStruct};
+use pruebas::TestData;
 
 mod sistema;
 use crate::sistema::*;
@@ -35,9 +36,10 @@ fn main() {
     cinta2_launch(tx_cinta2,rx_cinta2,tx_sensor2);
 
     let (tx_cinta1, cinta1_rx) = mpsc::channel();
-    let (cinta1_tx, rx_cinta1) = mpsc::channel();
     let (tx_sensor1, sensor1_rx) = mpsc::channel();
-    cinta1_launch(tx_cinta1,rx_cinta1,tx_sensor1,cinta2_tx,pogos_tx);
+    let (tx_pruebas, pruebas_rx) = mpsc::channel();
+    let (pruebas_pausa_tx, pruebas_pausa_rx) = mpsc::channel();
+    cinta1_launch(tx_cinta1,tx_sensor1,cinta2_tx,pogos_tx,selector_tx,tx_pruebas,pruebas_pausa_rx);
 
     let prev_data:Arc<Mutex<DataStruct>> = Arc::new(Mutex::new(Default::default()));
 
@@ -52,15 +54,16 @@ fn main() {
 
                 let data = leer_clientes(&server_rx);
 
-                actualizar_al_cliente(data, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(data, &mut estado, &prev_data, &pogos_rx, &selector_rx, &cinta1_rx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs, &pruebas_rx);
             },
             Estado::Pausa => {
+                pruebas_pausa_tx.send(true).expect("Error pausado las pruebas");
                 let nuevo = espear_cambio_de_estado(&server_rx);
-                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &cinta1_rx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs, &pruebas_rx);
             },
             Estado::Parado => {
                 let nuevo = espear_cambio_de_estado(&server_rx);
-                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &selector_tx, &cinta1_rx, &cinta1_tx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs);
+                actualizar_al_cliente(nuevo, &mut estado, &prev_data, &pogos_rx, &selector_rx, &cinta1_rx, &sensor1_rx, &cinta2_rx, &sensor2_rx, &mut txs, &pruebas_rx);
             },
         }
     }
@@ -72,30 +75,27 @@ fn actualizar_al_cliente(
     prev_data: &Arc<Mutex<DataStruct>>,
     pogos_rx: &Receiver<bool>,
     selector_rx: &Receiver<bool>,
-    selector_tx: &Sender<bool>,
     cinta1_rx: &Receiver<bool>,
-    cinta1_tx: &Sender<bool>,
     sensor1_rx: &Receiver<bool>,
     cinta2_rx: &Receiver<bool>,
     sensor2_rx: &Receiver<bool>,
-    txs: &mut Vec<Sender<TcpMessage>>
+    txs: &mut Vec<Sender<TcpMessage>>,
+    pruebas_rx: &Receiver<TestData>,
 ){
     gestionar_estado(data, estado);
 
     let mut prev_data_locked = prev_data.lock().expect("lock, actualizar_al_cliente");
 
     let situacion = ver_estado_del_sistema(
-        data,
         &*estado,
         *prev_data_locked,
-        &pogos_rx,
-        &selector_rx,
-        &selector_tx,
-        &cinta1_rx,
-        &cinta1_tx,
-        &sensor1_rx,
-        &cinta2_rx,
-        &sensor2_rx,
+        pogos_rx,
+        selector_rx,
+        cinta1_rx,
+        sensor1_rx,
+        cinta2_rx,
+        sensor2_rx,
+        pruebas_rx,
     );
 
     if *prev_data_locked != from_bytes(&situacion) {

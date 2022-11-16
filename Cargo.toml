@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-modulos_comunes = {git = "https://github.com/Mirkopoj/modulos_comunes.git", branch = "funca"}
+modulos_comunes = { git = "https://github.com/Mirkopoj/modulos_comunes.git", branch = "funca"}
 gpiod = "0.2.2"
+pruebas = { git = "https://github.com/Mirkopoj/Pogos_pruebas.git" }
