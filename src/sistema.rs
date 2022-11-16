@@ -122,7 +122,7 @@ pub fn pogos_launch(
 
         let chip = Chip::new("gpiochip3").expect("No se abrió el chip, pogos"); // open chip
 
-        let opts = Options::output([4]) // configure lines offsets
+        let opts = Options::output([5]) // configure lines offsets
             .values([false]) // optionally set initial values
             .consumer("my-outputs, pogos"); // optionally set consumer string
 
@@ -169,7 +169,7 @@ pub fn selector_launch(
 
         let chip = Chip::new("gpiochip3").expect("No se abrió el chip, selector"); // open chip
 
-        let opts = Options::output([6]) // configure lines offsets
+        let opts = Options::output([2]) // configure lines offsets
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
@@ -262,7 +262,7 @@ pub fn cinta2_launch(
             .values([false]) // optionally set initial values
             .consumer("my-outputs"); // optionally set consumer string
 
-        let ipts = Options::input([5]) // configure lines offsets
+        let ipts = Options::input([1]) // configure lines offsets
             .edge(EdgeDetect::Falling) 
             .consumer("my-inputs"); // optionally set consumer string
 
