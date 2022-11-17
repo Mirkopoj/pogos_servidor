@@ -45,7 +45,7 @@ fn main() {
 
     listener_launch(listener, client_tx, sender_tx, prev_data.clone());
 
-    let mut estado = Estado::Parado;
+    let mut estado = Default::default();
 
     loop {
         match estado {
