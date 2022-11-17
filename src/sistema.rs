@@ -239,8 +239,7 @@ pub fn cinta1_launch(
             while inputs.get_values([false;1]).expect("No se leyó true, cinta1") == [true] { }
             tx_sensor.send(false).expect("Rip tx_sensor cinta1");
             while inputs.get_values([false;1]).expect("No se leyó false, cinta1") == [false] {
-                let event = inputs.read_event().expect("No se leyó el evento, cinta1");
-                println!("Evento: {:}",event);
+                inputs.read_event().expect("No se leyó el evento, cinta1");
             }
             tx_sensor.send(true).expect("Rip tx_sensor cinta1");
             outputs.set_values([false]).expect("No se seteó low, cinta1");
@@ -286,8 +285,7 @@ pub fn cinta2_launch(
             while inputs.get_values([false;1]).expect("No se leyó falsse, cinta2") == [false] { }
             tx_sensor.send(true).expect("Rip tx_sensor cinta2");
             while inputs.get_values([false;1]).expect("No se leyó true, cinta2") == [true] {
-                let event = inputs.read_event().expect("No se leyó el evento, cinta2");
-                println!("Evento: {:?}",event);
+                inputs.read_event().expect("No se leyó el evento, cinta2");
             }
             tx_sensor.send(false).expect("Rip tx_sensor cinta2");
             outputs.set_values([false]).expect("No se seteó low, cinta2");
