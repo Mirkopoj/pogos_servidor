@@ -98,8 +98,8 @@ pub fn ver_estado_del_sistema(
         caracter: Default::default(),
         estado: *estado,
         pruebas: match pruebas_rx.try_recv(){
-            Ok(plac) => {
-                plac
+            Ok(test) => {
+                test
             },
             Err(why) => {
                 if why == TryRecvError::Empty {
@@ -109,9 +109,11 @@ pub fn ver_estado_del_sistema(
                 }
             },
         },
-    }.to_bytes();
+    };
 
-    ret
+    println!("Llegó: {:?}", ret.pruebas);
+
+    ret.to_bytes()
 }
 
 pub fn pogos_launch(
