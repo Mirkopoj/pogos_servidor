@@ -296,7 +296,7 @@ dependencies = [
 [[package]]
 name = "modulos_comunes"
 version = "0.1.0"
-source = "git+https://github.com/Mirkopoj/modulos_comunes.git?branch=funca#4d20ff4886a38f00ea6e2befc2cce8a810a9d9e0"
+source = "git+https://github.com/Mirkopoj/modulos_comunes.git?branch=funca#f41696625eb690afe915ab6206ab3977a7f03abe"
 dependencies = [
  "pruebas",
 ]
@@ -388,7 +388,7 @@ dependencies = [
 [[package]]
 name = "pruebas"
 version = "0.1.0"
-source = "git+https://github.com/Mirkopoj/Pogos_pruebas.git#f5b75e6e97c40b30859ad6c77c5aedaf67b52875"
+source = "git+https://github.com/Mirkopoj/Pogos_pruebas.git#5dc647fa6194c5b279a89c444c9515f58aa89ea5"
 dependencies = [
  "gpiod",
  "i2c-linux",

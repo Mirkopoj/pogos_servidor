@@ -111,8 +111,6 @@ pub fn ver_estado_del_sistema(
         },
     };
 
-    println!("Llegó: {:?}", ret.pruebas);
-
     ret.to_bytes()
 }
 
